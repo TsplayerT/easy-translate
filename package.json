@@ -1,0 +1,14 @@
+{
+	"name": "easy-translate",
+	"version": "1.0.0",
+	"license": "ISC",
+	"main": "index.js",
+	"scripts": {
+		"start": "node index.js",
+		"build": "nexe index.js --build --ico icon.ico"
+	},
+	"dependencies": {
+		"@vitalets/google-translate-api": "^9.0.0",
+		"yargs": "^17.6.2"
+	}
+}
