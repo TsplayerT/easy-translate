@@ -5,7 +5,8 @@
 	"main": "index.js",
 	"scripts": {
 		"start": "node index.js",
-		"build": "nexe index.js --build --ico icon.ico"
+		"dev": "node index.js file CHANGELOG.txt \"pt-BR es-MX en-US\" --ofn=release_notes --f --t",
+		"build": "nexe index.js --build --ico icon.ico --resource node_modules"
 	},
 	"dependencies": {
 		"@vitalets/google-translate-api": "^9.0.0",

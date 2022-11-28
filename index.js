@@ -1,16 +1,16 @@
 // NOT SUPPORTED ESM (MODULE TYPE)
 
 const fs = require("fs");
-const path = require("path");
-const { translate } = require("@vitalets/google-translate-api");
 const yargs = require("yargs/yargs");
 const { hideBin } = require("yargs/helpers");
+const { translate } = require("@vitalets/google-translate-api");
 
 // https://wikipedia.org/wiki/ANSI_escape_code
 const COLORS = {
 	yellow: "\x1b[33m%s\x1b[0m",
 	cyan: "\x1b[36m%s\x1b[0m",
-	white: "\x1b[37m%s\x1b[0m"
+	white: "\x1b[37m%s\x1b[0m",
+	red: "\x1b[31m%s\x1b[0m"
 };
 
 function showConsole(message, enabled, color) {
@@ -23,6 +23,7 @@ function getOutputParameters(values) {
 	showConsole("function <getOutputParameters>", values.debug);
 
 	return {
+		...values,
 		directory: values.outputFileDirectory,
 		dynamicFolder: values.outputDynamicLanguageFolder || false,
 		name: values.outputFileName,
@@ -36,58 +37,93 @@ function showError(error, path) {
 	error && console.error(message);
 }
 
-async function getTranslate(content, language, debug) {
+async function getTranslate(content, language, debug, test) {
 	showConsole("function <getTranslate>", debug);
 
-	// const { text } = await translate(content, { to: language });
-	const text = content;
+	try {
+		const text = test ? content : await translate(content, { to: language });
+		
+		showConsole(`[${language}]: ${text}`, debug, COLORS.yellow);
+		showConsole(`√ content translated to '${language}'`, true, COLORS.yellow);
 
-	showConsole(`[${language}]: ${text}`, debug, COLORS.yellow);
+		return text;
+	} catch (error) {
+		if (error.name === "TooManyRequestsError") {
+			showConsole(`the amount of translations exceeded the free amount in a short period of time of the Google Translate service, please use a VPN`, true, COLORS.red);
 
-	return text;
+			return null;
+		}
+	}
 }
 
-async function saveValues(outputParameters, data, debug) {
-	showConsole("function <saveValues>", debug);
+async function createDirectory(outputParameters, language, debug, forced) {
+	showConsole("function <createDirectory>", debug);
 
-	const { directory, dynamicFolder, name, extension } = outputParameters;
+	const { directory, dynamicFolder } = outputParameters;
+	const directoryPath = dynamicFolder ? `${directory}/${language}` : directory;
+	const directoryExist = fs.existsSync(directoryPath);
 
-	if (Array.isArray(data) && data.length > 0) {
-		data.flatMap(x => Object.entries(x)).forEach(([language, value]) => {
-			const customPath = dynamicFolder ? `${directory}/${language}/${name || language}.${extension}` : `${directory}/${name || language}.${extension}`;
-			const finalCustomPath = path.dirname(customPath);
+	showConsole(`directoryPath: ${directoryPath}`, debug);
 
-			showConsole(`customPath: ${customPath}`, debug);
-			showConsole(`finalCustomPath: ${finalCustomPath}`, debug);
+	if (!directoryExist || forced) {
+		fs.mkdirSync(directoryPath, { recursive: true }, showError);
 
-			if (!fs.existsSync(finalCustomPath)) {
-				showConsole("not exists directory", debug);
-		
-				fs.mkdirSync(finalCustomPath, { recursive: true }, showError);
-				showConsole("create directory", debug);
-			}
+		showConsole(`√ directory '${directoryPath}' created`, true, COLORS.yellow);
+	}
 
-			fs.writeFileSync(customPath, value, { encoding: "utf-8" });
-			
-			showConsole("writed file", debug);
-		});
+	return directoryPath;
+}
+
+async function createFile(outputParameters, directory, language, content, debug, forced) {
+	showConsole("function <createFile>", debug);
+
+	const { name, extension } = outputParameters;
+	const fileNameExtension = `${name || language}.${extension}`;
+	const filePath = `${directory}/${fileNameExtension}`;
+	const fileExist = fs.existsSync(filePath);
+
+	showConsole(`filePath: ${filePath}`, debug);
+
+	fs.writeFileSync(filePath, content, { encoding: "utf-8" });
+	
+	if (!fileExist || forced) {
+		showConsole(`√ file '${fileNameExtension}' created`, true, COLORS.yellow);
 	}
 }
 
 async function multipleTasks(content, languages, outputParameters, debug) {
 	showConsole("function <multipleTasks>", debug);
 
-	const array = !languages.includes(",") ? languages.split(" ") : languages.replaceAll(" ", "").split(",");
-	const tasks = array.map(async x => {
-		const data = await getTranslate(content, x, debug);
+	const { forced, test } = outputParameters;
 
-		return { [x]: data };
-	});
+	if (test) {
+		showConsole("===================================", true, COLORS.red);
+		showConsole("============ TEST MODE ============", true, COLORS.red);
+		showConsole("===================================", true, COLORS.red);
+	}
+
+	const array = !languages.includes(",") ? languages.split(" ") : languages.replaceAll(" ", "").split(",");
+	const tasks = array.map(async x => new Promise(async resolve => {
+		// makes it run as a sequential task	
+		setTimeout(async () => {
+			const data = await getTranslate(content, x, debug, test);
+
+			if (data) {
+				const directory = await createDirectory(outputParameters, x, debug, forced);
+	
+				await createFile(outputParameters, directory, x, data, debug, forced);
+	
+				resolve({ [x]: data });
+			}
+		}, 0)
+
+	}));
+
 	const results = await Promise.all(tasks);
 
-	saveValues(outputParameters, results, debug);
-
-	showConsole("√ successfully translated content", true, COLORS.yellow);
+	showConsole(results, debug);
+	showConsole("===================================", true, COLORS.yellow);
+	showConsole("√ operation completed", true, COLORS.yellow);
 }
 
 async function App() {
@@ -95,7 +131,6 @@ async function App() {
 		.command({
 			command: "file <directory> <l|languages>",
 			desc: "use the contents of a file to translate into multiple languages",
-			aliases: ["f"],
 			handler: (argv) => fs.readFile(argv.directory, async (error, data) => {
 				if (error) {
 					console.error(error);
@@ -107,7 +142,6 @@ async function App() {
 		.command({
 			command: "text <text> <l|languages>",
 			desc: "use text to translate into multiple languages",
-			aliases: ["t"],
 			handler: async (argv) => await multipleTasks(argv.text, argv.languages, getOutputParameters(argv), argv.debug)
 		})
 		.options({
@@ -129,6 +163,16 @@ async function App() {
 			},
 			"debug": {
 				alias: "d",
+				type: "boolean",
+				default: false
+			},
+			"forced": {
+				alias: "f",
+				type: "boolean",
+				default: false
+			},
+			"test": {
+				alias: "t",
 				type: "boolean",
 				default: false
 			}
