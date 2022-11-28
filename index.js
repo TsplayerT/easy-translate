@@ -41,7 +41,7 @@ async function getTranslate(content, language, debug, test) {
 	showConsole("function <getTranslate>", debug);
 
 	try {
-		const text = test ? content : (await translate(content, { to: language }));
+		const text = test ? content : (await translate(content, { to: language })).text;
 		
 		showConsole(`[${language}]: ${text}`, debug, COLORS.yellow);
 		showConsole(`√ content translated to '${language}'`, true, COLORS.yellow);
@@ -106,7 +106,9 @@ async function multipleTasks(content, languages, outputParameters, debug) {
 	const tasks = array.map(async x => new Promise(async resolve => {
 		// makes it run as a sequential task	
 		setTimeout(async () => {
-			const data = await getTranslate(content, x, debug, test);
+			const data = await getTranslate(content, x, debug, test)
+
+			console.log(typeof data, data);
 
 			if (data) {
 				const directory = await createDirectory(outputParameters, x, debug, forced);
