@@ -108,8 +108,6 @@ async function multipleTasks(content, languages, outputParameters, debug) {
 		setTimeout(async () => {
 			const data = await getTranslate(content, x, debug, test)
 
-			console.log(typeof data, data);
-
 			if (data) {
 				const directory = await createDirectory(outputParameters, x, debug, forced);
 	
