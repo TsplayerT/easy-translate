@@ -41,7 +41,7 @@ async function getTranslate(content, language, debug, test) {
 	showConsole("function <getTranslate>", debug);
 
 	try {
-		const text = test ? content : (await translate(content, { to: language })).text;
+		const text = test || language === "default" ? content : (await translate(content, { to: language })).text;
 		
 		showConsole(`[${language}]: ${text}`, debug, COLORS.yellow);
 		showConsole(`√ content translated to '${language}'`, true, COLORS.yellow);

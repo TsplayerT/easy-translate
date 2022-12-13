@@ -5,7 +5,7 @@
 	"main": "index.js",
 	"scripts": {
 		"start": "node index.js",
-		"dev": "node index.js file CHANGELOG.txt \"pt-BR es-MX en-US\" --ofn=release_notes --f --t",
+		"dev": "node index.js file CHANGELOG.txt \"default pt-BR es-MX en-US\" --ofn=release_notes --f --t",
 		"prd": "node index.js file CHANGELOG.txt \"en-US\" --ofn=release_notes",
 		"build": "nexe index.js --build --ico icon.ico --resource node_modules"
 	},
