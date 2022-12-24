@@ -5,9 +5,12 @@
 	"main": "index.js",
 	"scripts": {
 		"start": "node index.js",
-		"dev": "node index.js file CHANGELOG.txt \"default pt-BR es-MX en-US\" --ofn=release_notes --f --t",
-		"prd": "node index.js file CHANGELOG.txt \"en-US\" --ofn=release_notes",
-		"build": "nexe index.js --build --ico icon.ico --resource node_modules"
+		"dev:dir": "node index.js directory environments/development/dir/default \"pt-BR es-MX en-US\" --f --t",
+		"dev:file": "node index.js file environments/development/file/CHANGELOG.txt \"default pt-BR es-MX en-US\" --ofn=release_notes --f --t",
+		"prd:dir": "node index.js directory environments/production/dir/default \"en-US\"",
+		"prd:file": "node index.js file environments/production/file/CHANGELOG.txt \"en-US\" --ofn=release_notes",
+		"build": "nexe index.js --build --ico icon.ico --resource node_modules",
+		"dec": "node index.js dec"
 	},
 	"dependencies": {
 		"@vitalets/google-translate-api": "^9.0.0",

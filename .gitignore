@@ -3,4 +3,11 @@
 
 package-lock.json
 
+**/dir/*
+**/file/*
+
+!/**/dir/default/
+!/**/CHANGELOG.txt
+
+
 *.exe
