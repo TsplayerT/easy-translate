@@ -155,15 +155,18 @@ function basicPathValidation(args, validCallback, invalidMessage) {
 			const files = stats.isDirectory() ? fs.readdirSync(args.path).map(x => `${args.path}/${x}`) : stats.isFile() ? [args.path] : [];
 
 			if (!validCallback || validCallback(stats)) {
-				files.forEach((x, i) => {
+				files.filter(x => x).forEach((x, i) => {
 					fs.readFile(x, async (readFileError, data) => {
 						if (readFileError) {
 							showConsole(readFileError.message, true, COLORS.red);
 						} else {
-							const filename = x.substring(x.lastIndexOf("/") + 1, x.lastIndexOf("."));
-							const newArgs = files.length > 1 ? { ...args, outputFileName: filename } : args;
+							const fileName = x.substring(x.lastIndexOf("/") + 1, x.lastIndexOf("."));
+
+							if (args.excludeFileName.length === 0 || !args.excludeFileName.includes(fileName)) {
+								const newArgs = files.length > 1 ? { ...args, outputFileName: fileName } : args;
 	
-							await multipleTasks(data.toString(), args.languages, getOutputParameters(newArgs), args.debug, i, files.length - 1)
+								await multipleTasks(data.toString(), args.languages, getOutputParameters(newArgs), args.debug, i, files.length - 1)
+							}
 						}
 					});
 				})
@@ -246,6 +249,10 @@ async function App() {
 			},
 			"outputFileName": {
 				alias: "ofn"
+			},
+			"excludeFileName": {
+				alias: "efn",
+				type: "array"
 			},
 			"outputFileExtension": {
 				alias: "ofe",
